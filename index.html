@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Guía de Comandos - DarkRP Staff</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/@alpinejs/collapse@3.x.x/dist/cdn.min.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <style>
+        body { font-family: 'Inter', sans-serif; scroll-behavior: smooth; }
+        /* Paneles de cristal oscuro */
+        .glass-panel {
+            background: rgba(15, 23, 42, 0.6); /* Slate-900 con transparencia */
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+        .glass-header {
+            background: rgba(30, 41, 59, 0.8); /* Slate-800 un poco más sólido */
+        }
+        /* Animación del fondo */
+        @keyframes blob {
+            0% { transform: translate(0px, 0px) scale(1); }
+            33% { transform: translate(30px, -50px) scale(1.1); }
+            66% { transform: translate(-20px, 20px) scale(0.9); }
+            100% { transform: translate(0px, 0px) scale(1); }
+        }
+        .animate-blob { animation: blob 7s infinite; }
+        .animation-delay-2000 { animation-delay: 2s; }
+        .animation-delay-4000 { animation-delay: 4s; }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-200 min-h-screen relative overflow-x-hidden">
+
+    <div class="fixed top-0 left-0 w-full h-full overflow-hidden -z-10 pointer-events-none">
+        <div class="absolute top-0 left-1/4 w-96 h-96 bg-indigo-600 rounded-full mix-blend-multiply filter blur-[128px] opacity-20 animate-blob"></div>
+        <div class="absolute bottom-0 right-1/4 w-96 h-96 bg-blue-600 rounded-full mix-blend-multiply filter blur-[128px] opacity-20 animate-blob animation-delay-2000"></div>
+        <div class="absolute bottom-1/4 left-1/3 w-96 h-96 bg-purple-600 rounded-full mix-blend-multiply filter blur-[128px] opacity-20 animate-blob animation-delay-4000"></div>
+    </div>
+
+    <div x-data="commandApp()" class="container mx-auto px-4 py-12 max-w-5xl">
+        
+        <header class="text-center mb-12">
+            <div class="inline-block p-2 px-4 rounded-full bg-slate-800/50 border border-slate-700 mb-4 text-sm text-blue-400 font-semibold uppercase tracking-wider">
+                <i class="fa-solid fa-shield-halved mr-2"></i> Staff Panel
+            </div>
+            <h1 class="text-4xl md:text-6xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-indigo-400 to-purple-500 drop-shadow-sm">
+                Guía de Comandos ULX
+            </h1>
+            <p class="text-slate-400 mt-4 text-lg max-w-2xl mx-auto">Referencia rápida de administración para el servidor DarkRP. Busca comandos y copia su sintaxis fácilmente.</p>
+        </header>
+
+        <div class="sticky top-4 z-20 mb-8">
+            <div class="glass-panel rounded-2xl p-2 flex items-center max-w-2xl mx-auto ring-1 ring-white/10 focus-within:ring-blue-500/50 transition-all shadow-lg">
+                <i class="fa-solid fa-magnifying-glass ml-4 text-slate-400 text-lg"></i>
+                <input 
+                    x-model="search"
+                    @input="handleSearchInput()"
+                    type="text" 
+                    placeholder="Escribe para buscar comando o categoría (ej: ban, darkrp, job)..." 
+                    class="w-full bg-transparent border-none focus:ring-0 text-white placeholder-slate-500 h-12 px-4 text-lg"
+                >
+                <button 
+                    x-show="search.length > 0" 
+                    @click="search = ''; handleSearchInput()" 
+                    class="text-slate-500 hover:text-white mr-4 transition"
+                    x-transition
+                >
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+        </div>
+
+        <div class="space-y-4">
+            <template x-for="(cat, catIndex) in filteredCategories" :key="cat.name">
+                <div class="glass-panel rounded-xl overflow-hidden transition-all duration-300 hover:border-slate-600/50">
+                    <button 
+                        @click="toggleCategory(cat.name)" 
+                        class="glass-header w-full p-5 flex items-center justify-between text-left hover:bg-slate-800/50 transition-colors group"
+                    >
+                        <div class="flex items-center gap-4">
+                            <div class="w-10 h-10 rounded-lg flex items-center justify-center bg-gradient-to-br from-slate-800 to-slate-900 border border-slate-700/50 group-hover:border-blue-500/30 transition-colors shadow-sm">
+                                <i :class="cat.icon" class="text-xl text-blue-400 group-hover:text-blue-300 transition-colors"></i>
+                            </div>
+                            <h2 class="text-xl font-bold text-slate-100 tracking-tight" x-text="cat.name"></h2>
+                            <span class="text-xs font-medium px-2.5 py-0.5 rounded-full bg-slate-800 text-slate-400 border border-slate-700/50" x-text="cat.commands.length + ' comandos'"></span>
+                        </div>
+                        <div class="w-8 h-8 rounded-full bg-slate-900/50 flex items-center justify-center border border-slate-700/30 group-hover:border-slate-600 transition-all">
+                            <i class="fa-solid fa-chevron-down transition-transform duration-300 text-slate-400" :class="cat.isOpen ? 'rotate-180 text-blue-400' : ''"></i>
+                        </div>
+                    </button>
+
+                    <div x-show="cat.isOpen" x-collapse>
+                        <div class="p-5 bg-slate-900/30 grid grid-cols-1 md:grid-cols-2 gap-4 border-t border-slate-800/50">
+                            <template x-for="cmd in filterCommands(cat.commands)" :key="cmd.syntax">
+                                <div class="group/cmd bg-slate-800/40 border border-slate-700/50 p-4 rounded-lg hover:bg-slate-800/80 hover:border-blue-500/30 transition-all relative">
+                                    <div class="flex justify-between items-start mb-2">
+                                        <h3 class="font-bold text-blue-300 group-hover/cmd:text-blue-200 transition-colors" x-text="cmd.name"></h3>
+                                    </div>
+                                    <p class="text-slate-400 text-sm mb-3 leading-relaxed" x-text="cmd.desc"></p>
+                                    
+                                    <div class="bg-slate-950/50 pl-3 pr-1 py-1.5 rounded-md border border-slate-800 flex justify-between items-center font-mono text-sm text-green-400/90 group-hover/cmd:border-slate-700 transition-colors">
+                                        <div class="overflow-x-auto scrollbar-hide mr-2 whitespace-nowrap" x-text="cmd.syntax"></div>
+                                        <button 
+                                            @click="copyToClipboard(cmd.syntax)" 
+                                            class="p-2 rounded-md hover:bg-slate-800 text-slate-500 hover:text-white transition-all active:scale-95 relative"
+                                            title="Copiar al portapapeles"
+                                        >
+                                            <i class="fa-regular fa-copy"></i>
+                                            <span class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 text-xs bg-green-600 text-white rounded opacity-0 transition-opacity pointer-events-none" :class="copiedSyntax === cmd.syntax ? 'opacity-100' : ''">
+                                                ¡Copiado!
+                                            </span>
+                                        </button>
+                                    </div>
+                                </div>
+                             </template>
+                        </div>
+                        <div x-show="search !== '' && filterCommands(cat.commands).length === 0" class="p-4 text-center text-slate-500 italic bg-slate-900/30 border-t border-slate-800/50">
+                            No hay coincidencias en esta categoría.
+                        </div>
+                    </div>
+                </div>
+            </template>
+        </div>
+
+        <div x-show="search !== '' && filteredCategories.length === 0" class="text-center py-16 glass-panel rounded-xl mt-8">
+            <i class="fa-solid fa-ghost text-5xl text-slate-600 mb-4"></i>
+            <h3 class="text-xl font-bold text-slate-300">No se encontraron resultados</h3>
+            <p class="text-slate-500 mt-2">Intenta con otro nombre de comando o categoría.</p>
+        </div>
+
+    </div>
+
+    <footer class="text-center py-8 text-slate-500 text-sm border-t border-slate-800/50 mt-12 bg-slate-950/50">
+        <p class="flex items-center justify-center gap-2">
+            <i class="fa-solid fa-code-commit"></i> Panel de Administración DarkRP v2.0
+        </p>
+    </footer>
+
+    <script>
+        function commandApp() {
+            return {
+                search: '',
+                copiedSyntax: null, // Para el feedback visual de copiado
+                
+                // --- AQUÍ ES DONDE EDITAS LAS DESCRIPCIONES ---
+                // He agrupado los comandos de tus fotos en categorías lógicas.
+                // Edita el campo 'desc' de cada comando.
+                data: [
+                    {
+                        name: 'DarkRP Core',
+                        icon: 'fa-solid fa-sack-dollar',
+                        isOpen: true, // Esta categoría aparecerá abierta por defecto
+                        commands: [
+                            { name: 'setjob', syntax: '!setjob <jugador> <nombre_trabajo>', desc: 'Fuerza a un jugador a tener un trabajo específico (ej: "Citizen").' },
+                            { name: 'addmoney', syntax: '!addmoney <jugador> <cantidad>', desc: 'Añade la cantidad especificada a la billetera del jugador.' },
+                            { name: 'setmoney', syntax: '!setmoney <jugador> <cantidad>', desc: 'Establece el dinero del jugador a una cantidad exacta. Cuidado con este.' },
+                            { name: 'setwanted', syntax: '!setwanted <jugador> <razón>', desc: 'Pone al jugador en estado de "Busca y Captura" para la policía.' },
+                            { name: 'arrest', syntax: '!arrest <jugador> <tiempo>', desc: 'Arresta al jugador y lo envía a la cárcel de DarkRP.' },
+                            { name: 'unarrest', syntax: '!unarrest <jugador>', desc: 'Libera a un jugador de la cárcel de DarkRP.' },
+                            { name: 'jobban', syntax: '!jobban <jugador> <trabajo> <tiempo>', desc: 'Prohíbe al jugador usar un trabajo específico temporalmente.' },
+                            { name: 'jobunban', syntax: '!jobunban <jugador> <trabajo>', desc: 'Quita el baneo de trabajo.' },
+                            { name: 'selldoor', syntax: '!selldoor', desc: 'Vende la puerta a la que estás mirando (si tiene dueño).' },
+                            { name: 'doorowner', syntax: '!doorowner <jugador>', desc: 'Asigna la puerta que miras al jugador especificado.' },
+                            { name: 'lockdown', syntax: '!lockdown', desc: 'Inicia un toque de queda en el servidor.' },
+                            { name: 'unlkockdown', syntax: '!unlockdown', desc: 'Finaliza el toque de queda.' },
+                            { name: 'resetlaws', syntax: '!resetlaws', desc: 'Reinicia las leyes del tablón a las predeterminadas.' },
+                            { name: 'shipment', syntax: '!shipment <nombre>', desc: 'Spawnea un cargamento de armas (ej: !shipment ak47).' }
+                        ]
+                    },
+                    {
+                        name: 'Moderación y Castigos',
+                        icon: 'fa-solid fa-gavel',
+                        isOpen: false,
+                        commands: [
+                            // Comandos de las fotos 'Utility', 'Fun' y 'ULXPP' que son castigos
+                            { name: 'jail', syntax: '!jail <jugador> <segundos>', desc: 'Encierra al jugador en una jaula de administración.' },
+                            { name: 'jailtp', syntax: '!jailtp <jugador> <segundos>', desc: 'Teletransporta al jugador a tu mira y lo encarcela.' },
+                            { name: 'kick', syntax: '!kick <jugador> <razón>', desc: 'Expulsa al jugador del servidor.' },
+                            { name: 'ban', syntax: '!ban <jugador> <tiempo> <razón>', desc: 'Veta al jugador. Tiempo en minutos (0 es permanente).' },
+                            { name: 'banish', syntax: '!banish <jugador>', desc: 'Comando de ULXPP para banear (similar a ban).' },
+                            { name: 'slay', syntax: '!slay <jugador>', desc: 'Mata al jugador instantáneamente.' },
+                            { name: 'sslay', syntax: '!sslay <jugador>', desc: 'Silent Slay. Mata al jugador sin que aparezca en el killfeed.' },
+                            { name: 'gag', syntax: '!gag <jugador>', desc: 'Silencia el micrófono del jugador.' },
+                            { name: 'mute', syntax: '!mute <jugador>', desc: 'Silencia el chat de texto del jugador.' },
+                            { name: 'freeze', syntax: '!freeze <jugador>', desc: 'Congela al jugador en su posición actual.' },
+                            { name: 'shock', syntax: '!shock <jugador> <daño>', desc: 'Electrocuta al jugador haciendo daño.' },
+                            { name: 'maul', syntax: '!maul <jugador>', desc: 'Invoca zombies para atacar al jugador (usar con precaución).' },
+                            { name: 'strip', syntax: '!strip <jugador>', desc: 'Quita todas las armas al jugador.' }
+                        ]
+                    },
+                    {
+                        name: 'Teletransporte',
+                        icon: 'fa-solid fa-location-dot',
+                        isOpen: false,
+                        commands: [
+                            { name: 'goto', syntax: '!goto <jugador>', desc: 'Te teletransporta a la posición del jugador.' },
+                            { name: 'bring', syntax: '!bring <jugador>', desc: 'Trae al jugador a tu posición actual.' },
+                            { name: 'return', syntax: '!return <jugador>', desc: 'Devuelve al jugador a su posición anterior al teletransporte.' },
+                            { name: 'teleport', syntax: '!teleport', desc: 'Te teletransporta a donde estás apuntando con la mira.' },
+                            { name: 'send', syntax: '!send <jugador> <destino>', desc: 'Envía a un jugador a la posición de otro jugador.' }
+                        ]
+                    },
+                    {
+                        name: 'Utilidad y Staff',
+                        icon: 'fa-solid fa-toolbox',
+                        isOpen: false,
+                        commands: [
+                            { name: 'menu', syntax: '!menu', desc: 'Abre la interfaz gráfica principal de ULX (XGUI).' },
+                            { name: 'noclip', syntax: '!noclip', desc: 'Activa/desactiva el modo vuelo (atravesar paredes).' },
+                            { name: 'god', syntax: '!god <jugador>', desc: 'Otorga invencibilidad (God Mode).' },
+                            { name: 'ungod', syntax: '!ungod <jugador>', desc: 'Quita la invencibilidad.' },
+                            { name: 'cloak', syntax: '!cloak <jugador>', desc: 'Hace al jugador completamente invisible.' },
+                            { name: 'uncloak', syntax: '!uncloak <jugador>', desc: 'Vuelve visible al jugador.' },
+                            { name: 'spectate', syntax: '!spectate <jugador>', desc: 'Entra en modo espectador siguiendo al jugador.' },
+                            { name: 'who', syntax: '!who', desc: 'Muestra información detallada de los jugadores conectados en consola.' },
+                            { name: 'steamid', syntax: '!steamid <jugador>', desc: 'Muestra y copia la SteamID del jugador.' }
+                        ]
+                    },
+                    {
+                        name: 'Chat y Anuncios',
+                        icon: 'fa-solid fa-bullhorn',
+                        isOpen: false,
+                        commands: [
+                            { name: 'asay', syntax: '!asay <mensaje>', desc: 'Envía un mensaje solo a los administradores conectados.' },
+                            { name: 'tsay', syntax: '!tsay <mensaje>', desc: 'Envía un mensaje visible para todos en el centro de la pantalla.' },
+                            { name: 'csay', syntax: '!csay <mensaje>', desc: 'Similar a tsay pero en el centro superior.' },
+                            { name: 'psay', syntax: '!psay <jugador> <mensaje>', desc: 'Envía un mensaje privado a un jugador específico.' }
+                        ]
+                    },
+                    {
+                        name: 'Diversión (Fun)',
+                        icon: 'fa-solid fa-wand-magic-sparkles',
+                        isOpen: false,
+                        commands: [
+                            // Comandos de tus fotos 'Fun'
+                            { name: 'hp', syntax: '!hp <jugador> <cantidad>', desc: 'Establece la vida del jugador.' },
+                            { name: 'armor', syntax: '!armor <jugador> <cantidad>', desc: 'Establece el blindaje del jugador.' },
+                            { name: 'ignite', syntax: '!ignite <jugador> <segundos>', desc: 'Prende fuego al jugador.' },
+                            { name: 'ragdoll', syntax: '!ragdoll <jugador>', desc: 'Convierte al jugador en un muñeco de trapo.' },
+                            { name: 'model', syntax: '!model <jugador> <ruta_modelo>', desc: 'Cambia el modelo del jugador (ej: models/alyx.mdl).' },
+                            { name: 'slap', syntax: '!slay <jugador> <daño>', desc: 'Abofetea al jugador, empujándolo y haciendo poco daño.' },
+                            { name: 'whip', syntax: '!whip <jugador> <veces>', desc: 'Abofetea al jugador múltiples veces consecutivas.' }
+                        ]
+                    },
+                     // Agregué estos aunque no estaban en las fotos porque son vitales para DarkRP
+                    {
+                        name: 'Logs y Advertencias',
+                        icon: 'fa-solid fa-clipboard-list',
+                        isOpen: false,
+                        commands: [
+                            { name: 'logs', syntax: '!logs', desc: 'Abre el menú de registros avanzados (ej. bLogs).' },
+                            { name: 'warn', syntax: '!warn <jugador> <razón>', desc: 'Sistema Awarn: Añade una advertencia al jugador.' },
+                            { name: 'warnings', syntax: '!warnings <jugador>', desc: 'Muestra el historial de advertencias de un jugador.' }
+                        ]
+                    }
+                ],
+
+                // --- LÓGICA (NO TOCAR MUCHO POR AQUÍ) ---
+                
+                // Filtra las categorías que contienen comandos que coinciden con la búsqueda
+                get filteredCategories() {
+                    if (this.search === '') return this.data;
+                    
+                    const searchTerm = this.search.toLowerCase();
+                    
+                    return this.data.filter(cat => {
+                        // Buscar coincidencia en el nombre de la categoría
+                        const catMatch = cat.name.toLowerCase().includes(searchTerm);
+                        // Buscar coincidencia en los comandos internos
+                        const cmdMatch = cat.commands.some(cmd => 
+                            cmd.name.toLowerCase().includes(searchTerm) || 
+                            cmd.syntax.toLowerCase().includes(searchTerm)
+                        );
+                        return catMatch || cmdMatch;
+                    });
+                },
+
+                // Filtra los comandos dentro de una categoría
+                filterCommands(commands) {
+                    if (this.search === '') return commands;
+                     const searchTerm = this.search.toLowerCase();
+                     return commands.filter(cmd => 
+                          cmd.name.toLowerCase().includes(searchTerm) || 
+                          cmd.syntax.toLowerCase().includes(searchTerm)
+                     );
+                },
+
+                // Maneja el input del buscador para abrir automáticamente las categorías
+                handleSearchInput() {
+                    if (this.search.length > 0) {
+                        this.data.forEach(cat => cat.isOpen = true);
+                    } else {
+                         // Opcional: cerrar todas menos la primera al borrar búsqueda
+                        this.data.forEach((cat, index) => cat.isOpen = (index === 0));
+                    }
+                },
+
+                toggleCategory(catName) {
+                    const category = this.data.find(c => c.name === catName);
+                    if (category) category.isOpen = !category.isOpen;
+                },
+
+                copyToClipboard(text) {
+                    navigator.clipboard.writeText(text).then(() => {
+                        this.copiedSyntax = text;
+                        setTimeout(() => this.copiedSyntax = null, 2000); // Feedback visual por 2s
+                    });
+                }
+            }
+        }
+    </script>
+</body>
+</html>
